@@ -75,6 +75,9 @@ class PokeDig:
         evolved_from = pokemon.get('parentId').title() if pokemon.get('parentId') else ""
         return {"id": pokemon.get('id'), "name": pokemon.get('uniqueId').title(), "maxcp": pokemon.get('maxcp'),
                 "types": get_types(pokemon), "evolvedFrom": evolved_from.title(),
+                "baseAttack": pokemon.get('stats').get('baseAttack'),
+                "baseDefense": pokemon.get('stats').get('baseDefense'),
+                "baseStamina": pokemon.get('stats').get('baseStamina'),
                 "infoUrl": f"{self.pokemon_link_base_url}{pokemon.get('id')}",
                 "imageUrl": f"{self.pokemon_image_base_url}{pokemon.get('id')}.png"}
 
