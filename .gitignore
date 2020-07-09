@@ -123,3 +123,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+#PyCharm
+.idea/
+
+# don't check in V2_GAME_MASTER.json
+V2_GAME_MASTER.json
