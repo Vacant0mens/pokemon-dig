@@ -4,11 +4,15 @@ import re
 
 
 class PokeDig:
-    def __init__(self, min_cp=2750, must_be_evolved=False, include_mythical_legendary=False, include_evolutions=True):
+    def __init__(self, min_cp=2750, must_be_evolved=False, include_evolutions=True,
+                 include_mythical_legendary=False, only_mythical_and_legendary=False):
         self.min_cp = min_cp
         self.is_evolved = must_be_evolved
-        self.include_mythical_legendary = include_mythical_legendary
         self.include_evolutions = include_evolutions
+        self.include_mythical_legendary = include_mythical_legendary
+        self.only_mythical_and_legendary = only_mythical_and_legendary
+        if self.only_mythical_and_legendary:
+            self.include_mythical_legendary = True
         # all links returned in info are specific to db.pokemongohub.net, they have no affiliation to this code.
         self.api_base_url = "https://db.pokemongohub.net/api/pokemon/"
         self.pokemon_link_base_url = "https://db.pokemongohub.net/pokemon/"
@@ -58,6 +62,8 @@ class PokeDig:
                     if is_mythical_legendary:
                         if not self.include_mythical_legendary:
                             chosen = False
+                    if self.only_mythical_and_legendary and not is_mythical_legendary:
+                        chosen = False
                     # print(len(chosen_list))
                 if chosen:
                     self.update_chosen(poke)
