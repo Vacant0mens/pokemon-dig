@@ -147,5 +147,6 @@ def get_types(pokemon: dict) -> tuple:
 
 
 if __name__ == '__main__':
-    poke_dig = PokeDig(must_be_evolved=True, include_mythical_legendary=False)
+    # poke_dig = PokeDig(include_evolutions=True, include_unevolved=True)  # include_mythical_legendary=True)
+    poke_dig = PokeDig(only_mythical_and_legendary=True)
     poke_dig.get_strong_pokemon()
