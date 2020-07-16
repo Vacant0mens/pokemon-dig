@@ -44,7 +44,8 @@ class PokeDig:
                 # update max_cp
                 item.get('data').get('pokemon').update({"maxcp": max_cp})
                 # add pokemon info to local object for processing
-                self.poke_list.append(item.get('data').get('pokemon'))
+                info = self.get_pokemon_info(item.get('data').get('pokemon'))
+                self.poke_list.append(info)
         self.chosen_list = {}
 
     def get_strong_pokemon(self):
@@ -66,21 +67,21 @@ class PokeDig:
                         chosen = False
                     # print(len(chosen_list))
                 if chosen:
-                    self.update_chosen(poke)
+                    self.update_chosen(pokemon=poke)
                     if self.include_evolutions:
                         self.update_chosen_evolutions(poke)
 
-        print(len(self.chosen_list))
         [print(json.dumps(self.chosen_list[chosen_one], indent=4)) for chosen_one in self.chosen_list]
+        print(len(self.chosen_list))
 
     def update_chosen(self, pokemon: dict):
-        poke_info = self.get_pokemon_info(pokemon)
-        self.chosen_list.update({pokemon.get('id'): poke_info})
+        self.chosen_list.update({pokemon.get('id'): pokemon})
 
     def get_pokemon_info(self, pokemon: dict) -> dict:
         evolved_from = pokemon.get('parentId').title() if pokemon.get('parentId') else ""
         return {"id": pokemon.get('id'), "name": pokemon.get('uniqueId').title(), "maxcp": pokemon.get('maxcp'),
                 "types": get_types(pokemon), "evolvedFrom": evolved_from.title(),
+                "class": pokemon_class,
                 "baseAttack": pokemon.get('stats').get('baseAttack'),
                 "baseDefense": pokemon.get('stats').get('baseDefense'),
                 "baseStamina": pokemon.get('stats').get('baseStamina'),
@@ -93,13 +94,15 @@ class PokeDig:
         while evolved_from:
             if not poke2:
                 poke2 = next((pokes for pokes in self.poke_list
-                              if evolved_from == pokes.get('uniqueId').strip().title()), None)
+                              if evolved_from == pokes.get('name')), None)
             if poke2:
                 self.update_chosen(poke2)
                 evolved_from = get_evolution(poke2)
                 if evolved_from:
                     poke2 = next((pokes for pokes in self.poke_list
-                                  if evolved_from == pokes.get('uniqueId').strip().title()), None)
+                                  if evolved_from == pokes.get('name')), None)
+                    if "Abra" == poke2.get('name'):
+                        pass
                 else:
                     poke2 = None
             else:
@@ -112,7 +115,8 @@ def calculate_max_cp(attack, defense, stamina) -> int:
 
 
 def get_evolution(pokemon: dict):
-    return pokemon.get('parentId').title() if pokemon.get('parentId') else ''
+    return pokemon.get('evolvedFrom').title() if pokemon.get('evolvedFrom') \
+                                                 and pokemon.get('evolvedFrom') != "-Unevolved-" else ''
 
 
 def get_types(pokemon: dict) -> tuple:
