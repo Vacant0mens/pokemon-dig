@@ -4,15 +4,19 @@ import re
 
 
 class PokeDig:
-    def __init__(self, min_cp=2750, must_be_evolved=False, include_evolutions=True,
-                 include_mythical_legendary=False, only_mythical_and_legendary=False):
+    def __init__(self, min_cp=2750, include_unevolved=False, include_evolutions=False,
+                 include_mythical_legendary=False, only_mythical_and_legendary=False, get_all=False):
         self.min_cp = min_cp
-        self.is_evolved = must_be_evolved
+        self.include_unevolved = include_unevolved
         self.include_evolutions = include_evolutions
         self.include_mythical_legendary = include_mythical_legendary
         self.only_mythical_and_legendary = only_mythical_and_legendary
         if self.only_mythical_and_legendary:
             self.include_mythical_legendary = True
+            self.include_unevolved = True
+        self.get_all = get_all
+        if get_all:
+            self.include_evolutions = False
         # all links returned in info are specific to db.pokemongohub.net, they have no affiliation to this code.
         self.api_base_url = "https://db.pokemongohub.net/api/pokemon/"
         self.pokemon_link_base_url = "https://db.pokemongohub.net/pokemon/"
@@ -49,27 +53,31 @@ class PokeDig:
         self.chosen_list = {}
 
     def get_strong_pokemon(self):
-        for poke in self.poke_list:
+        for pokemon in self.poke_list:
             chosen = False
-            if poke.get('id') not in self.chosen_list:
-                is_mythical_legendary = bool(poke.get('pokemonClass'))
-                evolved_from = get_evolution(poke)
-                is_evolved = bool(evolved_from)
-                if int(poke.get('maxcp')) >= self.min_cp:
+            if pokemon.get('id') not in self.chosen_list:
+                is_mythical_legendary = True if pokemon.get('class') == "Legendary" or \
+                                                pokemon.get('class') == "Mythic" else False
+                evolved_from = get_evolution(pokemon=pokemon)
+                is_evolved = False if evolved_from == "-Unevolved-" else True
+                if int(pokemon.get('maxcp')) >= self.min_cp:
                     chosen = True
-                    if is_evolved:
-                        if not self.is_evolved:
-                            chosen = False
+                    if not is_evolved and not self.include_unevolved:
+                        chosen = False
                     if is_mythical_legendary:
                         if not self.include_mythical_legendary:
                             chosen = False
+                        else:
+                            chosen = True
                     if self.only_mythical_and_legendary and not is_mythical_legendary:
                         chosen = False
+                if self.get_all:
+                    chosen = True
                     # print(len(chosen_list))
                 if chosen:
-                    self.update_chosen(pokemon=poke)
+                    self.update_chosen(pokemon=pokemon)
                     if self.include_evolutions:
-                        self.update_chosen_evolutions(poke)
+                        self.update_chosen_evolutions(pokemon=pokemon)
 
         [print(json.dumps(self.chosen_list[chosen_one], indent=4)) for chosen_one in self.chosen_list]
         print(len(self.chosen_list))
@@ -78,7 +86,19 @@ class PokeDig:
         self.chosen_list.update({pokemon.get('id'): pokemon})
 
     def get_pokemon_info(self, pokemon: dict) -> dict:
-        evolved_from = pokemon.get('parentId').title() if pokemon.get('parentId') else ""
+        if pokemon.get('parentId'):
+            evolved_from = pokemon.get('parentId').title()
+        else:
+            family = '_'.join(pokemon.get('familyId').split('_')[1:]).title()
+            pokemon_id = pokemon.get('uniqueId').title()
+            evolution = pokemon.get('evolutionBranch')[0].get('evolution').title() \
+                if pokemon.get('evolutionBranch') else ''
+            if pokemon_id == family and not pokemon.get('candyToEvolve') and not pokemon.get('evolutionBranch'):
+                evolved_from = "-Unevolved-"
+            else:
+                evolved_from = ''
+        pokemon_class = pokemon.get('pokemonClass').split('_')[2].title()\
+            if pokemon.get('pokemonClass') else "Normal"
         return {"id": pokemon.get('id'), "name": pokemon.get('uniqueId').title(), "maxcp": pokemon.get('maxcp'),
                 "types": get_types(pokemon), "evolvedFrom": evolved_from.title(),
                 "class": pokemon_class,
